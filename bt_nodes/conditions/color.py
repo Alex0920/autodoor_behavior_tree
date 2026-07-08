@@ -24,11 +24,12 @@ class ColorConditionNode(ConditionNode):
             target_color = self._parse_color(self.config.get("target_color", None))
             tolerance = self.config.get_int("tolerance", 30)
             match_mode = self.config.get("match_mode", "any")
+            min_pixels = self.config.get_int("min_pixels", 1)
             match_ratio = self.config.get_float("color_match_threshold", 0.9)
 
             found, position = ImageProcessor.find_color(
                 screenshot, target_color, tolerance,
-                match_mode=match_mode, match_ratio=match_ratio
+                match_mode=match_mode, min_pixels=min_pixels, match_ratio=match_ratio
             )
 
             if found:
