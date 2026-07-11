@@ -365,7 +365,7 @@ class BehaviorTreeEditor(ctk.CTkFrame):
     def import_project_to_new_tab(self, project_path: str) -> Optional[str]:
         from bt_utils.project_manager import ProjectManager
         folder_name = ProjectManager.resolve_project_name(project_path)
-        
+
         for existing_id, existing_instance in self.tab_manager._trees.items():
             if existing_instance.project_root and os.path.samefile(existing_instance.project_root, project_path):
                 from tkinter import messagebox
@@ -373,7 +373,13 @@ class BehaviorTreeEditor(ctk.CTkFrame):
                 self.tab_manager.switch_tab(existing_id)
                 self.tab_bar.set_active(existing_id)
                 return existing_id
-        
+
+        # 导入项目时一致性校验：文件夹名 vs project_info.name
+        # 覆盖场景：用户修改了文件夹名后重新导入、启动恢复 Tab 时
+        self._check_and_prompt_name_consistency_on_open(project_path)
+        # 校验可能修改了 project_info.name，重新以文件夹名（权威源）为准
+        folder_name = ProjectManager.resolve_project_name(project_path)
+
         tab_id = self._create_new_tab(folder_name, project_path)
         
         tree_file = os.path.join(project_path, "tree.json")
@@ -527,11 +533,11 @@ class BehaviorTreeEditor(ctk.CTkFrame):
     def _init_first_tab(self):
         BehaviorTreeEditor._tab_counter += 1
         tab_id = f"tab_{BehaviorTreeEditor._tab_counter}"
-        
+
         context = ExecutionContext(project_root=self._fallback_project_root)
         engine = BehaviorTreeEngine(None)
         command_manager = CommandManager()
-        
+
         instance = TreeInstance(
             name=self._get_project_name(),
             engine=engine,
@@ -545,13 +551,13 @@ class BehaviorTreeEditor(ctk.CTkFrame):
             command_manager=command_manager,
             project_manager=self._fallback_project_manager
         )
-        
+
         autosave_manager = self._create_autosave_for_tab(instance)
         instance._autosave_manager = autosave_manager
-        
+
         self.tab_manager.add_tab(tab_id, instance)
         self.tab_bar.add_tab(tab_id, instance.name)
-        
+
         autosave_manager.start()
     
     def _create_autosave_for_tab(self, instance: TreeInstance) -> AutoSaveManager:
@@ -2194,10 +2200,10 @@ class BehaviorTreeEditor(ctk.CTkFrame):
             "项目名称不一致",
             f"检测到名称不一致：\n\n"
             f"  文件夹名：{folder_name}\n"
-            f"  project_info.name：{info_name}\n\n"
-            f"系统将以文件夹名 '{folder_name}' 作为权威源显示。\n"
-            f"是否同步更新 project_info.name 为 '{folder_name}'？\n\n"
-            f"（是 = 同步 project_info.name；否 = 仅本次按文件夹名显示，不修改文件）",
+            f"  项目名称：{info_name}\n\n"
+            f"系统将以文件夹名 '{folder_name}' 作为项目名称。\n"
+            f"是否同步更新 项目名称 为 '{folder_name}'？\n\n"
+            f"（是 = 同步 项目名称；否 = 仅本次按文件夹名显示，不修改文件）",
             icon=messagebox.WARNING,
         )
         if result:
@@ -2243,9 +2249,9 @@ class BehaviorTreeEditor(ctk.CTkFrame):
             "项目名称不一致",
             f"导出前检测到名称不一致：\n\n"
             f"  文件夹名：{folder_name}\n"
-            f"  project_info.name：{info_name}\n\n"
+            f"  项目名称：{info_name}\n\n"
             f"导出 ZIP 将以文件夹名 '{folder_name}' 作为项目名。\n"
-            f"是否同步更新 project_info.name 为 '{folder_name}' 后继续导出？\n\n"
+            f"是否同步更新 项目名称 为 '{folder_name}' 后继续导出？\n\n"
             f"（是 = 同步并继续导出；否 = 直接导出不同步；取消 = 取消导出）",
             icon=messagebox.WARNING,
         )
